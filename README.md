@@ -1,6 +1,12 @@
 # formalmath
 
-A formal mathematics package.
+A formal mathematics package of python.
+
+## install
+
+```
+pip install formalmath
+```
 
 ## setmm
 
