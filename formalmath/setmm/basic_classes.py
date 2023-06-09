@@ -2,27 +2,40 @@
 Python port for a slightly extended version of the formal language metamath (us.metamath.org) and the theorem database set.mm written by metamath. This system includes over 40000 theorems in the classic ZFC axiom system.
 
 The basic classes will be defined in this file. That includes:
-0. MObject. The base class for all classes.
-1. Constant. That correspond to $c statement in metamath.
-2. Variable. That correspond to $v statement in metamath.
-3. FormulaTemplate. That correspond to $a statements starting with wff symbol. Basically, it generates new formula from old. But the template's symbol list can also have Constant, ClassVariable, ClassType, SetVariable, etc.
-4. Formula. That correspond to wff in metamath and set.mm. It is not a part of the basic metamath language. But it is defined in set.mm to denote well formed formula. There is always new ways to form a wff, when a new term is introduced. But all of them correspond to a conbination of old terms.
-5. ClassType. That correspond to class in metamath and set.mm.
-6. ClassVariable. That correspond to class denoted by a single symbol in metamath and set.mm.
+1. MObject. The base class for all classes.
+2. Constant. That correspond to $c statement in metamath.
+2.1. FormulaConstant. Constants that are also Formula objects.
+2.2. ClassConstant. Constants that are also ClassType objects.
+3. Variable. That correspond to $v statement in metamath.
+4. Template. That correspond to $a and $p statements starting with wff symbol or class symbol. Basically, it generates new formula and class from old. But the template's symbol list can also have Constant, ClassType, SetVariable, etc.
+4.1. FormulaTemplate. Templates that generates well formed formulas.
+4.2. ClassTemplate. Templates that generates classes.
+5. Formula. That correspond to wff in metamath and set.mm. It is not a part of the basic metamath language. But it is defined in set.mm to denote well formed formula. There is always new ways to form a wff, when a new term is introduced. But all of them correspond to a conbination of old terms.
+5.1. FormulaVariable. That correspond to wff denoted by a single symbol in metamath and set.mm. 
+6. ClassType. That correspond to class in metamath and set.mm.
+6.1. ClassVariable. That correspond to class denoted by a single symbol in metamath and set.mm.
 7. SetVariable. That correspond to setvar in metamath and set.mm.
-8. Axiom. That correspond to $a statements that are axioms.
-9. Definition. That correspond to $a statements that are definitions.
+8. Proposition. It's a basic type for all axioms, definitions, theorems and conjectures.
+9. Axiom. That correspond to $a statements that are axioms.
+10. Definition. That correspond to $a statements that are definitions.
+11. Theorem. That correspond to $p statements. Require a correct proof ( $= (proof) $. part ).
+12. Conjecture. That are $p statements without proof.
 
 Inherit relation:
-MObject ----- Constant
+
+MObject ----- Constant ----- FormulaConstant (also inherit from Formula)
+          |              |-- ClassConstant (also inherit from ClassType)
           |
-          |-- Variable -- SetVariable
+          |-- Variable ----- SetVariable
+          |              |-- FormulaVariable (also inherit from Formula)
+          |              |-- ClassVariable (also inherit from ClassType)
           |         
-          |-- Formula -- FormulaVariable (also inherit Variable)
+          |-- Formula
           |
-          |-- FormulaTemplate
+          |-- ClassType
           |
-          |-- ClassType -- ClassVariable (also inherit Variable)
+          |-- Template ----- FormulaTemplate
+                         |-- ClassTemplate
 
 Some basic constants will be defined here too, such as left and right parenthesis, well-formed formula symbol and turnstile.
 '''
@@ -65,7 +78,8 @@ class MObject:
             self.metamath_code = metamath_code
 
         # add the new MObject into dicts
-        MObject.MObject_labels[label] = self
+        if label:
+            MObject.MObject_labels[label] = self
         if latex_code:
             MObject.MObject_latex_codes[latex_code] = self
         if metamath_code:
@@ -201,7 +215,18 @@ class Formula(MObject):
         '''
         labelstr = ' '.join([f"{s.label}" for s in self.list_of_symbols])
         return f"Formula(\"{labelstr}\")"
+
+class FormulaConstant(Constant, Formula):
+    '''
+    Constants that are also well formed formulas.
+    '''
+    def __init__(self, label=None, latex_code=None, metamath_code=None, list_of_symbols=None):
+        super().__init__(label, latex_code, metamath_code)
+        self.list_of_symbols=[self]
     
+    def __str__(self):
+        return f"FormulaConstant(\"{self.label}\")"
+
 class FormulaVariable(Variable, Formula):
     '''
     $f statement of form $f wff varname $. It means that varname represents a well formed formula.
@@ -248,7 +273,18 @@ class ClassType(MObject):
         print ClaaType. will override the __str__ method in MObject.
         '''
         labelstr = ' '.join([f"{s.label}" for s in self.list_of_symbols])
-        return f"Formula(\"{labelstr}\")"
+        return f"Class(\"{labelstr}\")"
+
+class ClassConstant(Constant, ClassType):
+    '''
+    Constants that are also ClassType objects.
+    '''
+    def __init__(self, label=None, latex_code=None, metamath_code=None):
+        super().__init__(label, latex_code, metamath_code)
+        self.list_of_symbols=[self]
+
+    def __str__(self):
+        return f"ClassConstant(\"{self.label}\")"
 
 class ClassVariable(Variable, ClassType):
     '''
@@ -259,7 +295,7 @@ class ClassVariable(Variable, ClassType):
         self.list_of_symbols = [self]
     
     def __str__(self):
-        return f"ClassVariable(\"{self.label}\")"
+        return f"Class(\"{self.label}\")"
 
 class SetVariable(Variable):
     '''
@@ -271,9 +307,9 @@ class SetVariable(Variable):
     def __str__(self):
         return f"SetVariable(\"{self.label}\")"
 
-class FormulaTemplate(MObject):
+class Template(MObject):
     '''
-    $a statements that generates new Formula from old by substitution.
+    $a statements that generates new Formula or ClassType from old by substitution.
     '''
     def __init__(self, template=None, label=None, latex_code=None, metamath_code=None):
         '''
@@ -286,26 +322,25 @@ class FormulaTemplate(MObject):
         self._check_template(template)            
         setattr(self, "template", template)
         
-    def generate(self, vars, mylabel=None, mycode=None, mymmcode=None):
+    def _generate(self, vars):
         '''
-        use the template to define a generator of new Formula from old
+        use the template to define a generator of new Formula or ClassType from old
         '''
         mylist = []
         for symbol in self.template["template"]:
             if isinstance(symbol,str):
                 if self.template["var_types"][symbol] in [Formula,ClassType]:
-                    if len(vars[symbol].list_of_symbols) > 1:
-                        mylist = mylist + vars[symbol].list_of_symbols
-                    else:
-                        mylist.append(vars[symbol])
+                    # if len(vars[symbol].list_of_symbols) > 1:
+                    mylist = mylist + vars[symbol].list_of_symbols
+                    # else:
+                    # mylist.append(vars[symbol])
                 else:
                     mylist.append(vars[symbol])
             else:
                 mylist.append(symbol)
-        newFormula = Formula(mylabel,mycode,mymmcode,mylist)
-        return newFormula
+        return mylist
     
-    def generate_template(self, vars, mylabel=None, mycode=None, mymmcode=None):
+    def _generate_template(self, vars):
         '''
         use the template to define a generator of new FormulaTemplate from old 
         '''
@@ -331,7 +366,7 @@ class FormulaTemplate(MObject):
                 else:
                     if new_var_types[vars[item]] != var_types[item]:
                         raise ValueError(f"Conflict types: {new_var_types[vars[item]]} and {var_types[item]}")
-            elif isinstance(vars[item], FormulaTemplate):
+            elif isinstance(vars[item], Template):
                 for symbol in vars[item].template["var_types"].keys():
                     if symbol not in new_var_types.keys():
                         new_var_types[symbol] = vars[item].template["var_types"][symbol]
@@ -348,14 +383,14 @@ class FormulaTemplate(MObject):
                 else:
                     if symbol not in vars.keys():
                         raise ValueError(f"Undefined symbol : {symbol}")
-                    if not isinstance(vars[symbol],FormulaTemplate):
+                    if not isinstance(vars[symbol],Template):
                         raise ValueError(f"Unsupported type : {vars[symbol]}")
                     new_template = new_template + vars[symbol].template["template"]
             else:
                 new_template.append(symbol)
         
-        new_formula_temp = FormulaTemplate({"var_types":new_var_types,"template":new_template},mylabel,mycode,mymmcode)
-        return new_formula_temp
+        new_temp = {"var_types":new_var_types,"template":new_template}
+        return new_temp
 
     def _check_template(self, template):
         '''
@@ -375,7 +410,7 @@ class FormulaTemplate(MObject):
         
         for item in vars:
             # ensure that the type assignings in template["var_types"] are supported (Formula, SetVariable, ClassVariable)
-            if template["var_types"][item] not in [Formula, SetVariable, ClassVariable]:
+            if template["var_types"][item] not in [Formula, SetVariable, ClassType]:
                 raise ValueError(f"Found unsupported type in template: {item}:{template['var_types'][item]}")
         
     def __str__(self):
@@ -390,9 +425,35 @@ class FormulaTemplate(MObject):
             vartype_str += f"{v} : {self.template['var_types'][v].__name__}\n"
         return f"Template: {temp_str}\nTypes:\n{vartype_str}"
 
+class FormulaTemplate(Template):
+    '''
+    $a statements that generates new Formula from old by substitution.
+    '''
+    def __init__(self, template=None, label=None, latex_code=None, metamath_code=None):
+        super().__init__(template, label, latex_code, metamath_code)
+    
+    def generate(self, vars, label=None, latex_code=None, metamath_code=None):
+        list_of_symbols = self._generate(vars)
+        return Formula(label, latex_code, metamath_code, list_of_symbols)
+    
+    def generate_template(self, vars, mylabel=None, mycode=None, mymmcode=None):
+        temp = self._generate_template(vars)
+        return FormulaTemplate(temp,mylabel,mycode,mymmcode)
 
-
-
+class ClassTemplate(Template):
+    '''
+    $a statements that generates new ClassType from old by substitution.
+    '''
+    def __init__(self, template=None, label=None, latex_code=None, metamath_code=None):
+        super().__init__(template, label, latex_code, metamath_code)
+    
+    def generate(self, vars, label=None, latex_code=None, metamath_code=None):
+        list_of_symbols = self._generate(vars)
+        return ClassType(label, latex_code, metamath_code, list_of_symbols)
+    
+    def generate_template(self, vars, mylabel=None, mycode=None, mymmcode=None):
+        temp = self._generate_template(vars)
+        return ClassTemplate(temp,mylabel,mycode,mymmcode)
 
 if __name__=='__main__':
     lp = Constant("(")
@@ -433,3 +494,19 @@ if __name__=='__main__':
     # z : Formula
     # x : Formula
     # w : Formula
+    one = ClassConstant("1")
+    two = ClassConstant("2")
+    three = ClassConstant("3")
+    equal = Constant("=")
+    plus = Constant("+")
+    temp_plus = ClassTemplate({"var_types":{"a":ClassType,"b":ClassType},"template":["a",plus,"b"]})
+    temp_eq = FormulaTemplate({"var_types":{"u":ClassType,"v":ClassType},"template":["u",equal,"v"]})
+    temp_new = temp_eq.generate_template({"u":temp_plus,"v":"c"})
+    print(temp_new)
+    # Template:  a  +  b  =  c
+    # Types:
+    # a : ClassType
+    # b : ClassType
+    # c : ClassType
+    eq1p2e3 = temp_new.generate({"a":one,"b":two,"c":three})
+    print(eq1p2e3) # Formula("1 + 2 = 3")
