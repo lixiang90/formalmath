@@ -1,8 +1,8 @@
 # formalmath
 
-A formal mathematics package of python.
+A formal mathematics package.
 
-## install
+## Install
 
 ```
 pip install formalmath
@@ -12,17 +12,31 @@ pip install formalmath
 
 A port for [metamath](https://us.metamath.org) and `set.mm`. The language `metamath` is a math proof verifying language. And, `set.mm` is its main database of theorems, based on the classical ZFC axiom system.
 
-`MObject` is the basic class. Any `MObject` have a label. Some of them have short_code or metamath_code. The label system is unique (if you create a new MObject with the same label with existing one, the program will raise ValueError). So does the short_code and metamath_code.
+`MObject` is the basic type Any `MObject` have a label. Some of them have short_code or metamath_code. The label system is unique (if you create a new MObject with the same label with existing one, the program will raise ValueError). So does the short_code and metamath_code.
 
- `Constant` is the class of constants, corresponding to $c statements in metamath.
+ `Constant` is the type of constants, corresponding to $c statements in metamath.
 
-`Variable` is the class of variables, corresponding to $v statements in metamath.
+`Variable` is the type of variables, corresponding to $v statements in metamath.
 
-`Formula` is the base class of formulas, corresponding to wff in metamath and set.mm.
+`Formula` is the base type of formulas, corresponding to wff in metamath and set.mm.
 
-`FormulaVariable` is the class of formula with only one symbol.
+`FormulaConstant` are Constant objects that are also Formulas.
 
-`FormulaTemplate` is the class of templates that generate new formula out of old formulas and other symbols.
+`FormulaVariable` are Variable objects that are also Formulas.
+
+`ClassType` is the base type of classes, corresponding to class in metamath and set.mm.
+
+`ClassConstant` are Constant objects that are also `ClassType` objects.
+
+`ClassVariable` are Variable objects that are also `ClassType` objects.
+
+`Template` are base type of templates. A template can generate new formula or class out of old.
+
+`FormulaTemplate` denote templates that generate new formula out of old formulas and other symbols.
+
+`ClassTemplate` denote templates that generate new `ClassType` objects out of old `ClassType` objects and other symbols.
+
+`SetVariable` denote `setvar` notation in metamath and set.mm.
 
 The port of other concepts in metamath and set.mm is a work in process.
 
@@ -82,5 +96,21 @@ print(wi3)
 # z : Formula
 # x : Formula
 # w : Formula
+one = ClassConstant("1")
+two = ClassConstant("2")
+three = ClassConstant("3")
+equal = Constant("=")
+plus = Constant("+")
+temp_plus = ClassTemplate({"var_types":{"a":ClassType,"b":ClassType},"template":["a",plus,"b"]})
+temp_eq = FormulaTemplate({"var_types":{"u":ClassType,"v":ClassType},"template":["u",equal,"v"]})
+temp_new = temp_eq.generate_template({"u":temp_plus,"v":"c"})
+print(temp_new)
+# Template:  a  +  b  =  c
+# Types:
+# a : ClassType
+# b : ClassType
+# c : ClassType
+eq1p2e3 = temp_new.generate({"a":one,"b":two,"c":three})
+print(eq1p2e3) # Formula("1 + 2 = 3")
 ```
 
