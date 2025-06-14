@@ -26,10 +26,10 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-# Explicitly tell setuptools to look for packages under 'formalmath/'
-packages = ["formalmath", "formalmath.metamath"]
 include-package-data = true
 
+[tool.setuptools.packages.find]
+where = ["src"]
+
 [tool.setuptools.package-dir]
-# Base package directory is 'formalmath/'
-"" = ""
+"" = "src"
