@@ -32,4 +32,4 @@ include-package-data = true
 
 [tool.setuptools.package-dir]
 # Base package directory is 'formalmath/'
-"" = "formalmath"
+"" = ""
