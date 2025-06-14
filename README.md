@@ -21,7 +21,7 @@ from formalmath.metamath import FormalSystem
 constants = ['wff', '->', '|-', '(', ')', '-.']
 
 # 2. Define axioms.
-axioms: Dict[str, Dict] = {
+axioms = {
     'wi': {
         'd': {},
         't': {
