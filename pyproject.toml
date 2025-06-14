@@ -1,0 +1,35 @@
+[project]
+name = "formalmath"
+version = "0.1.0"
+description = "A modular formal mathematics systems library, including Metamath"
+authors = [
+  { name = "Li Xiang", email = "lx20150211@gmail.com" }
+]
+readme = "README.md"
+requires-python = ">=3.7"
+license = {text = "MIT"}
+keywords = ["formal system", "metamath", "logic", "proof assistant"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Intended Audience :: Science/Research",
+  "Topic :: Scientific/Engineering :: Mathematics"
+]
+
+[project.urls]
+Homepage = "https://github.com/lixiang90/formalmath"
+Repository = "https://github.com/lixiang90/formalmath"
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+# Explicitly tell setuptools to look for packages under 'formalmath/'
+packages = ["formalmath", "formalmath.metamath"]
+include-package-data = true
+
+[tool.setuptools.package-dir]
+# Base package directory is 'formalmath/'
+"" = "formalmath"
