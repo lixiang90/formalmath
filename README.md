@@ -2,11 +2,11 @@
 
 Formal mathematics package on python.
 
-Support a proof check system core equivalent to [metamath](us.metamath.org)
+Support a proof check system core equivalent to [metamath](https://us.metamath.org)
 
  ## Install
 
-```
+```cmd
 pip install formalmath
 ```
 
@@ -23,7 +23,7 @@ constants = ['wff', '->', '|-', '(', ')', '-.']
 # 2. Define axioms.
 axioms = {
     'wi': {
-        'd': {},
+        'd': [],
         't': {
             'wph': 'wff ph',
             'wps': 'wff ps'
@@ -32,7 +32,7 @@ axioms = {
         'a': 'wff ( ph -> ps )'
     },
     'wn': {
-        'd': {},
+        'd': [],
         't': {
             'wph': 'wff ph'
         },
@@ -40,7 +40,7 @@ axioms = {
         'a': 'wff -. ph'
     },
     'ax-1': {
-        'd': {},
+        'd': [],
         't': {
             'wph': 'wff ph',
             'wps': 'wff ps'
@@ -49,7 +49,7 @@ axioms = {
         'a': '|- ( ph -> ( ps -> ph ) )'
     },
     'ax-2': {
-        'd': {},
+        'd': [],
         't': {
             'wph': 'wff ph',
             'wps': 'wff ps',
@@ -59,7 +59,7 @@ axioms = {
         'a': '|- ( ( ph -> ( ps -> ch ) ) -> ( ( ph -> ps ) -> ( ph -> ch ) ) )'
     },
     'ax-3': {
-        'd': {},
+        'd': [],
         't': {
             'wph': 'wff ph',
             'wps': 'wff ps'
@@ -68,7 +68,7 @@ axioms = {
         'a': '|- ( ( -. ph -> -. ps ) -> ( ps -> ph ) )'
     },
     'ax-mp': {
-        'd': {},
+        'd': [],
         't': {
             'wph': 'wff ph',
             'wps': 'wff ps'
@@ -86,7 +86,7 @@ fs = FormalSystem(constants=constants, axioms=axioms, theorems={})
 
 # 4. Write a new theorem for the system.
 mp2 = {
-    'd': {},
+    'd': [],
     't': {
         'wph': 'wff ph',
         'wps': 'wff ps',

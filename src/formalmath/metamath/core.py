@@ -1,4 +1,5 @@
 from typing import Dict, Optional, List, Union
+import itertools
 
 class FormalSystem:
     def __init__(self, 
@@ -76,10 +77,9 @@ class FormalSystem:
            example: 'h': {'min':'|- ph','maj':'|- ( ph -> ps )'} 
         4. key 'a' has string value that has several segments splitted by space,
            every segment is either a constant or a variable (from step 2),
-        5. key 'd' has dict value, 
-           each value is a string that has two segments splitted by space,
-           two segments are different variables (from step 2),
-           each key distinct, not in t's keys, not in h's keys, not in variables, and not in namespace.keys()
+        5. key 'd' has list value, 
+           each element is a string that has >=2 segments splitted by space,
+           segments are distinct variables (from step 2),
         6. every variable got from step 2 appears at least once in values of 'h' and 'a'
         """
         # step 1: check prop keys
@@ -119,17 +119,13 @@ class FormalSystem:
         for token in prop['a'].split():
             assert token in self.constants or token in variables, f'Assertion token invalid: {token}'
 
-        # step 5: check 'd' distinct variable pairs
-        assert isinstance(prop['d'], dict), f'Wrong type distinct value: {prop["d"]}'
-        dist_names = []
-        for k, v in prop['d'].items():
-            assert k not in self.namespace and k not in new_names and k not in hyp_names and k not in dist_names, f'distinct label invalid or duplicate: {k}'
-            dist_names.append(k)
-            assert isinstance(v, str), f'Distinct {k} must be a string'
+        # step 5: check 'd' distinct variable groups
+        assert isinstance(prop['d'], list), f'Wrong type distinct value: {prop["d"]}'
+        for v in prop['d']:
+            assert isinstance(v, str), f'Distinct {v} must be a string'
             v_split = v.split()
-            assert len(v_split) == 2, f'Distinct {k} must have exactly two variables: {v}'
-            var1, var2 = v_split
-            assert var1 in variables and var2 in variables and var1 != var2, f'Distinct {k} variables invalid or same: {v}'
+            assert len(v_split) >= 2, f'Distinct group must have at least two variables: {v}'
+            assert all(var in variables for var in v_split) and len(set(v_split))==len(v_split), f'Distinct variables invalid or same: {v}'
 
         # step 6: ensure each variable appears in at least one hypothesis or assertion
         used = set()
@@ -213,11 +209,12 @@ class FormalSystem:
                 subs[var] = ' '.join(tokens[1:])
                 trace.append(f"  match {lbl}: type '{pat_type}', var '{var}' -> '{subs[var]}'")
             # distinct check
-            for d_lbl, pair in rule['d'].items():
-                v1, v2 = pair.split()
-                if v1 in subs and v2 in subs:
-                    if set(subs[v1].split()) & set(subs[v2].split()):
-                        raise AssertionError(f"Distinct violation {d_lbl} at step {idx}")
+            for grp in rule['d']:
+                for pair in itertools.combinations(grp.split(), 2):
+                    v1, v2 = pair
+                    if v1 in subs and v2 in subs:
+                        if set(subs[v1].split()) & set(subs[v2].split()):
+                            raise AssertionError(f"Distinct violation {grp} at step {idx}")
             # hypothesis match
             for i, h_lbl in enumerate(h_keys, start=len(t_keys)):
                 h_pat = rule['h'][h_lbl]
