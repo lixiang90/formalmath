@@ -1,6 +1,6 @@
 [project]
 name = "formalmath"
-version = "0.1.1"
+version = "0.1.2"
 description = "A modular formal mathematics systems library, including Metamath"
 authors = [
   { name = "Li Xiang", email = "lx20150211@gmail.com" }
