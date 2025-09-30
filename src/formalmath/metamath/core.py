@@ -3,9 +3,9 @@ import itertools
 
 class FormalSystem:
     def __init__(self, 
-                 constants: Optional[List[str]],
-                 axioms: Optional[Dict], 
-                 theorems: Optional[Dict]={}, 
+                 constants: Optional[List[str]]=None,
+                 axioms: Optional[Dict]=None, 
+                 theorems: Optional[Dict]=None, 
                  initial_data: Optional[Dict]=None
                  ):
         """
@@ -122,10 +122,9 @@ class FormalSystem:
         # step 5: check 'd' distinct variable groups
         assert isinstance(prop['d'], list), f'Wrong type distinct value: {prop["d"]}'
         for v in prop['d']:
-            assert isinstance(v, str), f'Distinct {v} must be a string'
-            v_split = v.split()
-            assert len(v_split) >= 2, f'Distinct group must have at least two variables: {v}'
-            assert all(var in variables for var in v_split) and len(set(v_split))==len(v_split), f'Distinct variables invalid or same: {v}'
+            assert isinstance(v, list), f'Distinct {v} must be a list'
+            assert len(v) >= 2, f'Distinct group must have at least two variables: {v}'
+            assert all(var in variables for var in v) and len(set(v))==len(v), f'Distinct variables invalid or same: {v}'
 
         # step 6: ensure each variable appears in at least one hypothesis or assertion
         used = set()
@@ -210,7 +209,7 @@ class FormalSystem:
                 trace.append(f"  match {lbl}: type '{pat_type}', var '{var}' -> '{subs[var]}'")
             # distinct check
             for grp in rule['d']:
-                for pair in itertools.combinations(grp.split(), 2):
+                for pair in itertools.combinations(grp, 2):
                     v1, v2 = pair
                     if v1 in subs and v2 in subs:
                         if set(subs[v1].split()) & set(subs[v2].split()):
